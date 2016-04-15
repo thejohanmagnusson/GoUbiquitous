@@ -8,8 +8,9 @@ The app uses data from the OpenWeatherMap, to get data from this service a API k
 A key can be acquired from [here] (http://www.openweathermap.org/appid)
 
 Add the key to your *gradle.properties*, note that there are two of these in your Android Studio project! 
-Place the key in the one marked *Global Properties*. The file path to the file on Windows is %USERPROFILE%\.gradle\gradle.properties
-**Do not put your API key in build.gradle for security reasons!**
+Place the key in the one marked *Global Properties*. The file path to the file on Windows is `%USERPROFILE%\.gradle\gradle.properties`
+
+Do not put your API key in build.gradle for security reasons!
 
 Example: MyOpenWeatherMapApiKey="This-is-your-key-string"
 
