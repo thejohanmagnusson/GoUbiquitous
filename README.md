@@ -7,7 +7,8 @@ The app was developed with Android Studio and targets the Android Lollipop 5.1 (
 The app uses data from the OpenWeatherMap, to get data from this service a API key is needed.
 A key can be acquired from [here] (http://www.openweathermap.org/appid)
 
-Add the key to your *gradle.properties*, note that there are two of these in your Android Studio project! Place the key in the one marked *Global Properties*. The file path to the file on Windows is %USERPROFILE%\.gradle\gradle.properties
+Add the key to your *gradle.properties*, note that there are two of these in your Android Studio project! 
+Place the key in the one marked *Global Properties*. The file path to the file on Windows is %USERPROFILE%\.gradle\gradle.properties
 **Do not put your API key in build.gradle for security reasons!**
 
 Example: MyOpenWeatherMapApiKey="This-is-your-key-string"
