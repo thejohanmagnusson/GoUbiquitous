@@ -72,6 +72,7 @@ public class LocationEditTextPreference extends EditTextPreference {
             public void onClick(View v) {
                 Context context = getContext();
 
+
                 // Launch the Place Picker so that the user can specify their location, and then
                 // return the result to SettingsActivity.
                 PlacePicker.IntentBuilder builder = new PlacePicker.IntentBuilder();
@@ -83,8 +84,7 @@ public class LocationEditTextPreference extends EditTextPreference {
                 // intent comes to the right place for us to process it.
                 Activity settingsActivity = (SettingsActivity) context;
                 try {
-                    settingsActivity.startActivityForResult(
-                            builder.build(context), SettingsActivity.PLACE_PICKER_REQUEST);
+                    settingsActivity.startActivityForResult(builder.build((Activity)context), SettingsActivity.PLACE_PICKER_REQUEST);
 
                 } catch (GooglePlayServicesNotAvailableException
                         | GooglePlayServicesRepairableException e) {
