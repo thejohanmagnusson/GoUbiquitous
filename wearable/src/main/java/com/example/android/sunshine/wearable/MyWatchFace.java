@@ -36,6 +36,7 @@ import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 
 import java.lang.ref.WeakReference;
+import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
@@ -90,13 +91,16 @@ public class MyWatchFace extends CanvasWatchFaceService {
         boolean mRegisteredTimeZoneReceiver = false;
         int mBackgroundColor;
         Paint mBackgroundPaint;
-        Paint mPrimaryTextPaint;
-        Paint mSecondaryTextPaint;
+        Paint mTimeTextPaint;
+        Paint mDateTextPaint;
         boolean mAmbient;
         boolean mBurnInProtection;
         Calendar mCalendar;
         float mXOffset;
         float mYOffset;
+
+        final SimpleDateFormat mSdfTime = new SimpleDateFormat("HH:mm");
+        final SimpleDateFormat mSdfDate = new SimpleDateFormat("EEE, MMM dd yyyy");
 
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
@@ -138,18 +142,17 @@ public class MyWatchFace extends CanvasWatchFaceService {
             mBackgroundPaint = new Paint();
             mBackgroundPaint.setColor(resources.getColor(R.color.primary));
 
-            mPrimaryTextPaint = new Paint();
-            mPrimaryTextPaint = createTextPaint(resources.getColor(R.color.white));
+            mTimeTextPaint = createTextPaint(resources.getColor(R.color.white), resources.getDimension(R.dimen.text_size_time));
 
-            mSecondaryTextPaint = new Paint();
-            mSecondaryTextPaint = createTextPaint(resources.getColor(R.color.primary_light));
+            mDateTextPaint = createTextPaint(resources.getColor(R.color.primary_light), resources.getDimension(R.dimen.text_size_date));
 
             mCalendar = Calendar.getInstance();
         }
 
-        private Paint createTextPaint(int textColor) {
+        private Paint createTextPaint(int textColor, float textSize) {
             Paint paint = new Paint();
             paint.setColor(textColor);
+            paint.setTextSize(textSize);
             paint.setTypeface(NORMAL_TYPEFACE);
             paint.setAntiAlias(true);
             return paint;
@@ -217,8 +220,8 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 mAmbient = inAmbientMode;
 
                 if (mLowBitAmbient) {
-                    mPrimaryTextPaint.setAntiAlias(!inAmbientMode);
-                    mSecondaryTextPaint.setAntiAlias(!inAmbientMode);
+                    mTimeTextPaint.setAntiAlias(!inAmbientMode);
+                    mDateTextPaint.setAntiAlias(!inAmbientMode);
                 }
 
                 invalidate();
@@ -233,20 +236,15 @@ public class MyWatchFace extends CanvasWatchFaceService {
         public void onApplyWindowInsets(WindowInsets insets) {
             super.onApplyWindowInsets(insets);
 
+            //todo: Setup offsets
             // Load resources that have alternate values for round watches.
             Resources resources = MyWatchFace.this.getResources();
             boolean isRound = insets.isRound();
-            mXOffset = resources.getDimension(isRound
-                    ? R.dimen.digital_x_offset_round : R.dimen.digital_x_offset);
-            float textSize = resources.getDimension(isRound
-                    ? R.dimen.digital_text_size_round : R.dimen.digital_text_size);
-
-            mPrimaryTextPaint.setTextSize(textSize);
+            mXOffset = resources.getDimension(isRound ? R.dimen.digital_x_offset_round : R.dimen.digital_x_offset);
         }
 
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
-            // Draw the background.
             if (isInAmbientMode()) {
                 canvas.drawColor(Color.BLACK);
             }
@@ -254,13 +252,13 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 canvas.drawColor(mBackgroundColor);
             }
 
-            // Draw H:MM in ambient mode or H:MM:SS in interactive mode.
             mCalendar.setTimeInMillis(System.currentTimeMillis());
-            String text = mAmbient
-                    ? String.format("%d:%02d", mCalendar.get(Calendar.HOUR_OF_DAY), mCalendar.get(Calendar.MINUTE))
-                    : String.format("%d:%02d:%02d", mCalendar.get(Calendar.HOUR_OF_DAY), mCalendar.get(Calendar.MINUTE), mCalendar.get(Calendar.SECOND));
+            String time = mSdfTime.format((mCalendar.getTime()));
+            String date = mSdfDate.format((mCalendar.getTime())).toUpperCase();
 
-            canvas.drawText(text, mXOffset, mYOffset, mPrimaryTextPaint);
+            //todo: fix offsets
+            canvas.drawText(time, mXOffset, mYOffset, mTimeTextPaint);
+            canvas.drawText(date, mXOffset, mYOffset + 50, mDateTextPaint);
         }
 
         @Override
