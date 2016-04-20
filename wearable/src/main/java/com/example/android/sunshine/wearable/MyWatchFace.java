@@ -32,6 +32,7 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.wearable.watchface.CanvasWatchFaceService;
 import android.support.wearable.watchface.WatchFaceStyle;
+import android.view.Gravity;
 import android.view.SurfaceHolder;
 import android.view.WindowInsets;
 
@@ -90,14 +91,15 @@ public class MyWatchFace extends CanvasWatchFaceService {
         final Handler mUpdateTimeHandler = new EngineHandler(this);
         boolean mRegisteredTimeZoneReceiver = false;
         int mBackgroundColor;
-        Paint mBackgroundPaint;
         Paint mTimeTextPaint;
         Paint mDateTextPaint;
         boolean mAmbient;
         boolean mBurnInProtection;
         Calendar mCalendar;
-        float mXOffset;
-        float mYOffset;
+
+        float mYOffsetTime;
+        float mYOffsetDate;
+        float mYOffsetLine;
 
         final SimpleDateFormat mSdfTime = new SimpleDateFormat("HH:mm");
         final SimpleDateFormat mSdfDate = new SimpleDateFormat("EEE, MMM dd yyyy");
@@ -127,26 +129,27 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     .setCardPeekMode(WatchFaceStyle.PEEK_MODE_VARIABLE)
                     .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
                     .setShowSystemUiTime(false)
+                    .setStatusBarGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP)
+                    .setHotwordIndicatorGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP)
                     .build());
 
             Resources resources = MyWatchFace.this.getResources();
-            mYOffset = resources.getDimension(R.dimen.digital_y_offset);
+            mYOffsetTime = resources.getDimension(R.dimen.offset_time_text);
+            mYOffsetDate = resources.getDimension(R.dimen.offset_date_text);
+            mYOffsetLine = resources.getDimension(R.dimen.offset_line);
+
+            mCalendar = Calendar.getInstance();
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 mBackgroundColor = getResources().getColor(R.color.primary, null);
+                mTimeTextPaint = createTextPaint(resources.getColor(R.color.white, null), resources.getDimension(R.dimen.text_size_time));
+                mDateTextPaint = createTextPaint(resources.getColor(R.color.primary_light, null), resources.getDimension(R.dimen.text_size_date));
             }
             else {
                 mBackgroundColor = getResources().getColor(R.color.primary);
+                mTimeTextPaint = createTextPaint(resources.getColor(R.color.white), resources.getDimension(R.dimen.text_size_time));
+                mDateTextPaint = createTextPaint(resources.getColor(R.color.primary_light), resources.getDimension(R.dimen.text_size_date));
             }
-
-            mBackgroundPaint = new Paint();
-            mBackgroundPaint.setColor(resources.getColor(R.color.primary));
-
-            mTimeTextPaint = createTextPaint(resources.getColor(R.color.white), resources.getDimension(R.dimen.text_size_time));
-
-            mDateTextPaint = createTextPaint(resources.getColor(R.color.primary_light), resources.getDimension(R.dimen.text_size_date));
-
-            mCalendar = Calendar.getInstance();
         }
 
         private Paint createTextPaint(int textColor, float textSize) {
@@ -238,9 +241,9 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
             //todo: Setup offsets
             // Load resources that have alternate values for round watches.
-            Resources resources = MyWatchFace.this.getResources();
-            boolean isRound = insets.isRound();
-            mXOffset = resources.getDimension(isRound ? R.dimen.digital_x_offset_round : R.dimen.digital_x_offset);
+//            Resources resources = MyWatchFace.this.getResources();
+//            boolean isRound = insets.isRound();
+//            mXOffset = resources.getDimension(isRound ? R.dimen.digital_x_offset_round : R.dimen.digital_x_offset);
         }
 
         @Override
@@ -256,9 +259,9 @@ public class MyWatchFace extends CanvasWatchFaceService {
             String time = mSdfTime.format((mCalendar.getTime()));
             String date = mSdfDate.format((mCalendar.getTime())).toUpperCase();
 
-            //todo: fix offsets
-            canvas.drawText(time, mXOffset, mYOffset, mTimeTextPaint);
-            canvas.drawText(date, mXOffset, mYOffset + 50, mDateTextPaint);
+            canvas.drawText(time, bounds.centerX() - (mTimeTextPaint.measureText(time)) / 2, mYOffsetTime, mTimeTextPaint);
+            canvas.drawText(date, bounds.centerX() - (mDateTextPaint.measureText(date)) / 2, mYOffsetDate, mDateTextPaint);
+            canvas.drawLine(bounds.centerX() - 30, mYOffsetLine, bounds.centerX() + 30, mYOffsetLine, mDateTextPaint);
         }
 
         @Override
