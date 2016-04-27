@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.example.android.sunshine.wearable;
+package com.example.android.sunshine.app;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -41,6 +41,7 @@ import android.view.WindowInsets;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.wearable.Asset;
 import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataEvent;
 import com.google.android.gms.wearable.DataEventBuffer;
@@ -105,9 +106,10 @@ public class MyWatchFace extends CanvasWatchFaceService {
             DataApi.DataListener {
 
         final String LOG_TAG = Engine.class.getSimpleName();
-        final String KEY_HIGH_TEMP = "high_temp";
-        final String KEY_LOW_TEMP = "low_temp";
-        final String KEY_WEATHER_ICON = "weather_icon";
+
+        final static String KEY_MAX_TEMP = "max_temp";
+        final static String KEY_MIN_TEMP = "min_temp";
+        final static String KEY_WEATHER_ICON= "weather_icon";
 
         final Handler mUpdateTimeHandler = new EngineHandler(this);
         boolean mRegisteredTimeZoneReceiver = false;
@@ -130,6 +132,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
         String mTemperature;
         int mWeatherIcon;
+        int mCount = 0;
 
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
@@ -313,8 +316,11 @@ public class MyWatchFace extends CanvasWatchFaceService {
             canvas.drawLine(bounds.centerX() - 30, mYOffsetLine, bounds.centerX() + 30, mYOffsetLine, mDateTextPaint);
 
             //todo: add weather data. image | temp
+            if(mTemperature == null)
+                mTemperature = "0";
+
             if(!mTemperature.isEmpty())
-                canvas.drawText(mTemperature, bounds.centerX() - (mWeatherTextPaint.measureText(time)) / 2, mYOffsetTime, mWeatherTextPaint);
+                canvas.drawText(mTemperature, bounds.centerX() - (mWeatherTextPaint.measureText(time)) / 2, mYOffsetWeather, mWeatherTextPaint);
 
         }
 
@@ -360,7 +366,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
         /*GoogleApiClient*/
         @Override
         public void onConnected(@Nullable Bundle bundle) {
-            Log.d(LOG_TAG, "onConnected: " + bundle);
+            Log.d(LOG_TAG, "onConnected and data listener added: " + bundle);
 
             mHasDataApiListener = true;
             Wearable.DataApi.addListener(mGoogleApiClient, this);
@@ -388,7 +394,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 if(dataEvent.getType() == DataEvent.TYPE_CHANGED) {
                     DataItem dataitem = dataEvent.getDataItem();
 
-                    if(dataitem.getUri().getPath().compareTo("") == 0) {
+                    if(dataitem.getUri().getPath().compareTo("/data/weather") == 0) {
                         try {
                             DataMap dataMap = DataMapItem.fromDataItem(dataitem).getDataMap();
                             updateWeather(dataMap);
@@ -403,11 +409,17 @@ public class MyWatchFace extends CanvasWatchFaceService {
         }
 
         private void updateWeather(DataMap dataMap) {
-            String high = dataMap.containsKey(KEY_HIGH_TEMP) ? Integer.toString(dataMap.getInt(KEY_HIGH_TEMP)) : "";
-            String low = dataMap.containsKey(KEY_LOW_TEMP) ? Integer.toString(dataMap.getInt(KEY_LOW_TEMP)) : "";
+            Log.d(LOG_TAG,"updateWeather");
+            Asset asset = dataMap.containsKey(KEY_WEATHER_ICON) ? dataMap.getAsset(KEY_WEATHER_ICON) : null;
+            String max = dataMap.containsKey(KEY_MAX_TEMP) ? dataMap.getString(KEY_MAX_TEMP) : "";
+            String low = dataMap.containsKey(KEY_MIN_TEMP) ? dataMap.getString(KEY_MIN_TEMP) : "";
 
-            mTemperature = high + "° " + low + "°";
-            //todo: get icon
+            Log.d(LOG_TAG, "ASSET: " + (asset == null ? false : true));
+            Log.d(LOG_TAG, "MAX: " + max);
+            Log.d(LOG_TAG, "LOW: " + low);
+
+            mTemperature = max + " " + low;
+            //todo: icon
         }
     }
 }
