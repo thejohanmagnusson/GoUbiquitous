@@ -6,6 +6,6 @@
 
     <dimen name="offset_time_text">70dp</dimen>
     <dimen name="offset_date_text">100dp</dimen>
-    <dimen name="offset_line">120dp</dimen>
-    <dimen name="offset_weather_text">140dp</dimen>
+    <dimen name="offset_line">115dp</dimen>
+    <dimen name="offset_weather_text">145dp</dimen>
 </resources>

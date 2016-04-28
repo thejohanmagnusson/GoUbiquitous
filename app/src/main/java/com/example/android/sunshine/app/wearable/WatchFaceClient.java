@@ -74,6 +74,7 @@ public class WatchFaceClient implements GoogleApiClient.ConnectionCallbacks, Goo
                 dataMap.putAsset(KEY_WEATHER_ICON, asset);
                 dataMap.putString(KEY_MAX_TEMP, Utility.formatTemperature(mContext, maxTemperature));
                 dataMap.putString(KEY_MIN_TEMP, Utility.formatTemperature(mContext, minTemperature));
+                dataMap.putLong("time", System.currentTimeMillis());
 
                 PutDataRequest putDataRequest = putDataMapRequest.asPutDataRequest();
                 PendingResult<DataApi.DataItemResult> pendingResult = Wearable.DataApi.putDataItem(mGoogleApiClient, putDataRequest);

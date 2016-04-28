@@ -21,6 +21,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -41,6 +43,8 @@ import android.view.WindowInsets;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallbacks;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.wearable.Asset;
 import com.google.android.gms.wearable.DataApi;
 import com.google.android.gms.wearable.DataEvent;
@@ -50,6 +54,7 @@ import com.google.android.gms.wearable.DataMap;
 import com.google.android.gms.wearable.DataMapItem;
 import com.google.android.gms.wearable.Wearable;
 
+import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -130,9 +135,9 @@ public class MyWatchFace extends CanvasWatchFaceService {
         final SimpleDateFormat mSdfTime = new SimpleDateFormat("HH:mm");
         final SimpleDateFormat mSdfDate = new SimpleDateFormat("EEE, MMM dd yyyy");
 
-        String mTemperature;
-        int mWeatherIcon;
-        int mCount = 0;
+        String mMaxTemperature;
+        String mMinTemperature;
+        Bitmap mWeatherIcon;
 
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
@@ -157,7 +162,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
                     .setBackgroundVisibility(WatchFaceStyle.BACKGROUND_VISIBILITY_INTERRUPTIVE)
                     .setShowSystemUiTime(false)
                     .setStatusBarGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP)
-                    .setHotwordIndicatorGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP)
+                    .setHotwordIndicatorGravity(Gravity.CENTER_HORIZONTAL | Gravity.TOP | Gravity.RIGHT)
                     .build());
 
             Resources resources = MyWatchFace.this.getResources();
@@ -313,15 +318,17 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
             canvas.drawText(time, bounds.centerX() - (mTimeTextPaint.measureText(time)) / 2, mYOffsetTime, mTimeTextPaint);
             canvas.drawText(date, bounds.centerX() - (mDateTextPaint.measureText(date)) / 2, mYOffsetDate, mDateTextPaint);
-            canvas.drawLine(bounds.centerX() - 30, mYOffsetLine, bounds.centerX() + 30, mYOffsetLine, mDateTextPaint);
 
-            //todo: add weather data. image | temp
-            if(mTemperature == null)
-                mTemperature = "0";
+            if(mMinTemperature != null && mMaxTemperature != null && mWeatherIcon != null) {
 
-            if(!mTemperature.isEmpty())
-                canvas.drawText(mTemperature, bounds.centerX() - (mWeatherTextPaint.measureText(time)) / 2, mYOffsetWeather, mWeatherTextPaint);
+                canvas.drawLine(bounds.centerX() - 30, mYOffsetLine, bounds.centerX() + 30, mYOffsetLine, mDateTextPaint);
 
+                float maxTempTextLenght = mWeatherTextPaint.measureText(mMaxTemperature) / 2;
+                float xOffsetWeatherIcon = bounds.centerX() - (mWeatherIcon.getWidth() + (maxTempTextLenght / 2) + 20);
+                canvas.drawBitmap(mWeatherIcon, xOffsetWeatherIcon, mYOffsetWeather - mWeatherIcon.getHeight(), null);
+                canvas.drawText(mMaxTemperature, bounds.centerX() - (maxTempTextLenght / 2), mYOffsetWeather, mWeatherTextPaint);
+                canvas.drawText(mMinTemperature, bounds.centerX() - (maxTempTextLenght / 2) + 40, mYOffsetWeather, mWeatherTextPaint);
+            }
         }
 
         @Override
@@ -411,15 +418,27 @@ public class MyWatchFace extends CanvasWatchFaceService {
         private void updateWeather(DataMap dataMap) {
             Log.d(LOG_TAG,"updateWeather");
             Asset asset = dataMap.containsKey(KEY_WEATHER_ICON) ? dataMap.getAsset(KEY_WEATHER_ICON) : null;
-            String max = dataMap.containsKey(KEY_MAX_TEMP) ? dataMap.getString(KEY_MAX_TEMP) : "";
-            String low = dataMap.containsKey(KEY_MIN_TEMP) ? dataMap.getString(KEY_MIN_TEMP) : "";
+            mMaxTemperature = dataMap.containsKey(KEY_MAX_TEMP) ? dataMap.getString(KEY_MAX_TEMP) : "";
+            mMinTemperature = dataMap.containsKey(KEY_MIN_TEMP) ? dataMap.getString(KEY_MIN_TEMP) : "";
 
-            Log.d(LOG_TAG, "ASSET: " + (asset == null ? false : true));
-            Log.d(LOG_TAG, "MAX: " + max);
-            Log.d(LOG_TAG, "LOW: " + low);
+            if(asset != null) {
+                Wearable.DataApi.getFdForAsset(mGoogleApiClient, asset).setResultCallback(new ResultCallbacks<DataApi.GetFdForAssetResult>() {
+                    @Override
+                    public void onSuccess(@NonNull DataApi.GetFdForAssetResult getFdForAssetResult) {
+                        InputStream stream = getFdForAssetResult.getInputStream();
+                        mWeatherIcon = BitmapFactory.decodeStream(stream);
 
-            mTemperature = max + " " + low;
-            //todo: icon
+                        float scaleWidth = (mWeatherTextPaint.getTextSize() / mWeatherIcon.getHeight()) * mWeatherIcon.getWidth();
+                        mWeatherIcon = Bitmap.createScaledBitmap(mWeatherIcon, (int) scaleWidth, (int) mWeatherTextPaint.getTextSize(), true);
+                    }
+
+                    @Override
+                    public void onFailure(@NonNull Status status) {
+                        // Do nothing
+                        Log.d(LOG_TAG, "Failed to get weather icon: " + status.getStatusMessage());
+                    }
+                });
+            }
         }
     }
 }
