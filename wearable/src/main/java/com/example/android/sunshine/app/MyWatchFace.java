@@ -121,6 +121,7 @@ public class MyWatchFace extends CanvasWatchFaceService {
         int mBackgroundColor;
         Paint mTimeTextPaint;
         Paint mDateTextPaint;
+        Paint mDateTextPaintAmbient;
         Paint mWeatherTextPaint;
         boolean mAmbient;
         boolean mBurnInProtection;
@@ -142,8 +143,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
         final BroadcastReceiver mTimeZoneReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
-                //todo: need to handle intent?
-                //mCalendar.clear(intent.getStringExtra("time-zone"));
                 mCalendar.setTimeZone(TimeZone.getDefault());
                 invalidate();
             }
@@ -177,12 +176,14 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 mBackgroundColor = getResources().getColor(R.color.primary, null);
                 mTimeTextPaint = createTextPaint(resources.getColor(R.color.white, null), resources.getDimension(R.dimen.text_size_time));
                 mDateTextPaint = createTextPaint(resources.getColor(R.color.primary_light, null), resources.getDimension(R.dimen.text_size_date));
+                mDateTextPaintAmbient = createTextPaint(resources.getColor(R.color.white, null), resources.getDimension(R.dimen.text_size_date));
                 mWeatherTextPaint = createTextPaint(resources.getColor(R.color.primary_light, null), resources.getDimension(R.dimen.text_size_weather));
             }
             else {
                 mBackgroundColor = getResources().getColor(R.color.primary);
                 mTimeTextPaint = createTextPaint(resources.getColor(R.color.white), resources.getDimension(R.dimen.text_size_time));
                 mDateTextPaint = createTextPaint(resources.getColor(R.color.primary_light), resources.getDimension(R.dimen.text_size_date));
+                mDateTextPaintAmbient = createTextPaint(resources.getColor(R.color.white), resources.getDimension(R.dimen.text_size_date));
                 mWeatherTextPaint = createTextPaint(resources.getColor(R.color.primary_light), resources.getDimension(R.dimen.text_size_weather));
             }
 
@@ -267,9 +268,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
             mLowBitAmbient = properties.getBoolean(PROPERTY_LOW_BIT_AMBIENT, false);
             mBurnInProtection = properties.getBoolean(PROPERTY_BURN_IN_PROTECTION, false);
-
-            //todo: disable anti-aliasing and bitmap filtering when the device switches to ambient mode.
-            //todo: see http://developer.android.com/design/wear/watchfaces.html#SpecialScreens
         }
 
         @Override
@@ -295,16 +293,11 @@ public class MyWatchFace extends CanvasWatchFaceService {
         @Override
         public void onApplyWindowInsets(WindowInsets insets) {
             super.onApplyWindowInsets(insets);
-
-            //todo: Setup offsets
-            // Load resources that have alternate values for round watches.
-//            Resources resources = MyWatchFace.this.getResources();
-//            boolean isRound = insets.isRound();
-//            mXOffset = resources.getDimension(isRound ? R.dimen.digital_x_offset_round : R.dimen.digital_x_offset);
         }
 
         @Override
         public void onDraw(Canvas canvas, Rect bounds) {
+            // Background
             if (isInAmbientMode()) {
                 canvas.drawColor(Color.BLACK);
             }
@@ -312,22 +305,27 @@ public class MyWatchFace extends CanvasWatchFaceService {
                 canvas.drawColor(mBackgroundColor);
             }
 
+            // Time and date
             mCalendar.setTimeInMillis(System.currentTimeMillis());
             String time = mSdfTime.format((mCalendar.getTime()));
             String date = mSdfDate.format((mCalendar.getTime())).toUpperCase();
 
             canvas.drawText(time, bounds.centerX() - (mTimeTextPaint.measureText(time)) / 2, mYOffsetTime, mTimeTextPaint);
-            canvas.drawText(date, bounds.centerX() - (mDateTextPaint.measureText(date)) / 2, mYOffsetDate, mDateTextPaint);
+            canvas.drawText(date, bounds.centerX() - (mDateTextPaint.measureText(date)) / 2, mYOffsetDate, isInAmbientMode() ? mDateTextPaintAmbient :mDateTextPaint);
 
-            if(mMinTemperature != null && mMaxTemperature != null && mWeatherIcon != null) {
+            // Weather info
+            if(!isInAmbientMode()) {
+                if (mMinTemperature != null && mMaxTemperature != null && mWeatherIcon != null) {
 
-                canvas.drawLine(bounds.centerX() - 30, mYOffsetLine, bounds.centerX() + 30, mYOffsetLine, mDateTextPaint);
+                    canvas.drawLine(bounds.centerX() - 30, mYOffsetLine, bounds.centerX() + 30, mYOffsetLine, mDateTextPaint);
 
-                float maxTempTextLenght = mWeatherTextPaint.measureText(mMaxTemperature) / 2;
-                float xOffsetWeatherIcon = bounds.centerX() - (mWeatherIcon.getWidth() + (maxTempTextLenght / 2) + 20);
-                canvas.drawBitmap(mWeatherIcon, xOffsetWeatherIcon, mYOffsetWeather - mWeatherIcon.getHeight(), null);
-                canvas.drawText(mMaxTemperature, bounds.centerX() - (maxTempTextLenght / 2), mYOffsetWeather, mWeatherTextPaint);
-                canvas.drawText(mMinTemperature, bounds.centerX() - (maxTempTextLenght / 2) + 40, mYOffsetWeather, mWeatherTextPaint);
+                    float maxTempTextLenght = mWeatherTextPaint.measureText(mMaxTemperature) / 2;
+                    float xOffsetWeatherIcon = bounds.centerX() - (mWeatherIcon.getWidth() + (maxTempTextLenght / 2) + 20);
+
+                    canvas.drawBitmap(mWeatherIcon, xOffsetWeatherIcon, mYOffsetWeather - mWeatherIcon.getHeight(), null);
+                    canvas.drawText(mMaxTemperature, bounds.centerX() - (maxTempTextLenght), mYOffsetWeather, mWeatherTextPaint);
+                    canvas.drawText(mMinTemperature, bounds.centerX() + (maxTempTextLenght / 2) + 20, mYOffsetWeather, mWeatherTextPaint);
+                }
             }
         }
 
@@ -373,16 +371,12 @@ public class MyWatchFace extends CanvasWatchFaceService {
         /*GoogleApiClient*/
         @Override
         public void onConnected(@Nullable Bundle bundle) {
-            Log.d(LOG_TAG, "onConnected and data listener added: " + bundle);
-
             mHasDataApiListener = true;
             Wearable.DataApi.addListener(mGoogleApiClient, this);
         }
 
         @Override
         public void onConnectionSuspended(int i) {
-            Log.d(LOG_TAG, "onConnectionSuspended: " + i);
-
             if(mHasDataApiListener)
                 Wearable.DataApi.removeListener(mGoogleApiClient, this);
         }
@@ -395,8 +389,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
 
         @Override
         public void onDataChanged(DataEventBuffer dataEventBuffer) {
-            Log.d(LOG_TAG, "onDataChanged: " + dataEventBuffer.getCount());
-
             for (DataEvent dataEvent : dataEventBuffer) {
                 if(dataEvent.getType() == DataEvent.TYPE_CHANGED) {
                     DataItem dataitem = dataEvent.getDataItem();
@@ -416,7 +408,6 @@ public class MyWatchFace extends CanvasWatchFaceService {
         }
 
         private void updateWeather(DataMap dataMap) {
-            Log.d(LOG_TAG,"updateWeather");
             Asset asset = dataMap.containsKey(KEY_WEATHER_ICON) ? dataMap.getAsset(KEY_WEATHER_ICON) : null;
             mMaxTemperature = dataMap.containsKey(KEY_MAX_TEMP) ? dataMap.getString(KEY_MAX_TEMP) : "";
             mMinTemperature = dataMap.containsKey(KEY_MIN_TEMP) ? dataMap.getString(KEY_MIN_TEMP) : "";

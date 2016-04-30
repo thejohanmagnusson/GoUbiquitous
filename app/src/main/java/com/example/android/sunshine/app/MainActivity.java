@@ -33,7 +33,6 @@ import android.view.View;
 import com.example.android.sunshine.app.data.WeatherContract;
 import com.example.android.sunshine.app.gcm.RegistrationIntentService;
 import com.example.android.sunshine.app.sync.SunshineSyncAdapter;
-import com.example.android.sunshine.app.wearable.WatchFaceClient;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 
@@ -149,10 +148,6 @@ public class MainActivity extends AppCompatActivity implements ForecastFragment.
             }
             mLocation = location;
         }
-
-        //todo: DEBUG - REMOVE
-        Log.d(LOG_TAG, "Activity onResume - WatchFaceClient");
-        new WatchFaceClient(getApplicationContext());
     }
 
     @Override
